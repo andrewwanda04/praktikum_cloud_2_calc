@@ -1,13 +1,12 @@
 // Jenkinsfile: Pipeline CI/CD untuk Aplikasi Android
 pipeline {
-    // Kembali ke agent Docker di level pipeline, ini lebih efisien
     agent {
         docker {
             image 'my-android-build-image:latest' // Harus sesuai dengan nama image di docker-compose.yml
             args '-u root'
-            // Gunakan path Linux di WORKDIR yang sudah didefinisikan di Dockerfile
-            // WORKDIR di Dockerfile adalah: /home/jenkins/workspace/calculator
-            // Jenkins akan mengurus mapping volume C:/ProgramData ke path Linux di container.
+            // KUNCI: Paksa Jenkins untuk menggunakan shell Linux (sh) di dalam container
+            // Ini akan mengganti 'cmd.exe' yang dipanggil secara otomatis oleh Windows.
+            tool: 'sh'
         }
     }
 
@@ -36,9 +35,7 @@ pipeline {
                 echo 'MULAI BUILD DENGAN GRADLE...'
                 echo '============================'
                 
-                // Gunakan 'sh' (Linux shell) untuk menjalankan perintah di dalam container Docker
-                // Kita harus pastikan menjalankan ini di path kerja Linux: /home/jenkins/workspace/calculator
-                // Karena kita menggunakan agent di level pipeline, PWD (present working directory) sudah disiapkan
+                // sh (Linux shell) sekarang dijamin berjalan
                 
                 // 1. Memberi izin eksekusi pada Gradle Wrapper
                 sh 'chmod +x ./gradlew'
