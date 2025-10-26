@@ -4,9 +4,9 @@ pipeline {
         docker {
             image 'my-android-build-image:latest' // Harus sesuai dengan nama image di docker-compose.yml
             args '-u root'
-            // KUNCI: Paksa Jenkins untuk menggunakan shell Linux (sh) di dalam container
+            // PERBAIKAN SINTAKS: tool 'sh' (bukan tool: 'sh')
             // Ini akan mengganti 'cmd.exe' yang dipanggil secara otomatis oleh Windows.
-            tool: 'sh'
+            tool 'sh'
         }
     }
 
