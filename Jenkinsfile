@@ -1,11 +1,10 @@
-// Jenkinsfile: Pipeline CI/CD untuk Aplikasi Android
+// Jenkinsfile: Pipeline CI/CD Komprehensif untuk Aplikasi Android
 pipeline {
     agent {
         docker {
-            image 'my-android-build-image:latest' // Harus sesuai dengan nama image di docker-compose.yml
+            image 'my-android-build-image:latest' // Image builder Android
             args '-u root'
-            // MENGHAPUS OPSI "tool 'sh'" YANG TIDAK VALID.
-            // Memaksa reuseNode, Jenkins akan menggunakan sh/bash secara default di steps.
+            // Kunci untuk Windows: Gunakan ulang node Jenkins, yang membantu resolusi path.
             reuseNode true 
         }
     }
@@ -20,33 +19,39 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('1. Checkout Code') {
             steps {
-                // Mengambil kode dari GitHub
+                echo 'Mengambil kode dari GitHub...'
                 git branch: 'main',
                     credentialsId: env.CREDENTIALS_ID,
                     url: env.GITHUB_REPO
             }
         }
-
-        stage('Build Android APK') {
+        
+        stage('2. Run Unit Tests') {
             steps {
                 echo '============================'
-                echo 'MULAI BUILD DENGAN GRADLE...'
+                echo 'MENJALANKAN UNIT TESTS...'
+                echo '============================'
+                // Memberi izin eksekusi pada Gradle Wrapper
+                sh 'chmod +x ./gradlew'
+                // Menjalankan unit tests
+                sh './gradlew testDebugUnitTest'
+            }
+        }
+
+        stage('3. Assemble Debug APK') {
+            steps {
+                echo '============================'
+                echo 'MEMBANGUN (BUILD) APK...'
                 echo '============================'
                 
-                // Karena 'tool' tidak valid, kita pastikan menggunakan sh (Linux shell) 
-                // di dalam steps. 'reuseNode true' membantu memaksa shell Linux.
-                
-                // 1. Memberi izin eksekusi pada Gradle Wrapper
-                sh 'chmod +x ./gradlew'
-
-                // 2. Menjalankan perintah build Android
+                // Menjalankan perintah build Android
                 sh './gradlew assembleDebug'
             }
         }
 
-        stage('Archive Artifacts') {
+        stage('4. Archive APK') {
             steps {
                 echo '============================'
                 echo 'MENYIMPAN ARTIFACTS (APK)...'
@@ -59,11 +64,15 @@ pipeline {
     }
 
     post {
+        always {
+            // Memberikan feedback meskipun build gagal atau sukses
+            echo 'Pipeline selesai berjalan.'
+        }
         success {
             echo '✅ Build Android sukses! APK dapat didownload dari Artifacts.'
         }
         failure {
-            echo '❌ Build gagal, cek log Jenkins console output.'
+            echo '❌ Build gagal. Periksa log konsol untuk detail error Gradle.'
         }
     }
 }
