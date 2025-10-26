@@ -4,9 +4,9 @@ pipeline {
         docker {
             image 'my-android-build-image:latest' // Harus sesuai dengan nama image di docker-compose.yml
             args '-u root'
-            // PERBAIKAN SINTAKS: tool 'sh' (bukan tool: 'sh')
-            // Ini akan mengganti 'cmd.exe' yang dipanggil secara otomatis oleh Windows.
-            tool 'sh'
+            // MENGHAPUS OPSI "tool 'sh'" YANG TIDAK VALID.
+            // Memaksa reuseNode, Jenkins akan menggunakan sh/bash secara default di steps.
+            reuseNode true 
         }
     }
 
@@ -35,7 +35,8 @@ pipeline {
                 echo 'MULAI BUILD DENGAN GRADLE...'
                 echo '============================'
                 
-                // sh (Linux shell) sekarang dijamin berjalan
+                // Karena 'tool' tidak valid, kita pastikan menggunakan sh (Linux shell) 
+                // di dalam steps. 'reuseNode true' membantu memaksa shell Linux.
                 
                 // 1. Memberi izin eksekusi pada Gradle Wrapper
                 sh 'chmod +x ./gradlew'
