@@ -37,14 +37,14 @@ pipeline {
                 echo '============================'
                 
                 // Gunakan bat (Windows) untuk menjalankan docker run
-                // Perintah di dalam bash -c sekarang dikompres menjadi SATU BARIS LOGIS
+                // PERBAIKAN KRUSIAL: MENGGANTI `sed -i` DENGAN `sed` KE FILE SEMENTARA DAN KEMUDIAN `mv`
                 bat """
                     docker run --rm ^
                         -u 0 ^
                         -v "${WINDOWS_WORKSPACE}":"${DOCKER_MOUNT_PATH}" ^
                         -w "${DOCKER_MOUNT_PATH}" ^
                         my-android-build-image:latest bash -c ^
-                        "echo 'Running in container at \$(pwd)' && echo 'Fixing Windows line endings...' && sed -i 's/\\r//g' ./gradlew && ./gradlew testDebugUnitTest assembleDebug"
+                        "echo 'Running in container at \$(pwd)' && echo 'Fixing Windows line endings safely...' && sed 's/\\r//g' ./gradlew > gradlew.tmp && mv gradlew.tmp ./gradlew && ./gradlew testDebugUnitTest assembleDebug"
                 """
             }
         }
