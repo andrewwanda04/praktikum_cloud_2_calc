@@ -40,6 +40,7 @@ pipeline {
                 // Kita harus mengkonversi path Windows ke format yang dikenali Docker Daemon di Windows
                 bat """
                     docker run --rm ^
+                        -u 0 ^
                         -v "${WINDOWS_WORKSPACE}":"${DOCKER_MOUNT_PATH}" ^
                         -w "${DOCKER_MOUNT_PATH}" ^
                         my-android-build-image:latest sh -c ^
