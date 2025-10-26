@@ -1,0 +1,10 @@
+# docker-compose.yml (HANYA UNTUK MEMBANGUN IMAGE my-android-build-image)
+version: '3.8'
+
+services:
+  android-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile 
+    image: my-android-build-image:latest # Pastikan nama image ini sama dengan di Jenkinsfile
+    container_name: android_build_agent
