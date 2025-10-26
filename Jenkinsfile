@@ -1,21 +1,16 @@
-// Jenkinsfile: Pipeline CI/CD Komprehensif untuk Aplikasi Android
+// Jenkinsfile: CI/CD Android Calculator (Windows + Docker Safe)
 pipeline {
-    // KEMBALIKAN KE agent any KARENA agent docker BERMASALAH DI WINDOWS
     agent any
 
     environment {
-        // GANTI INI DENGAN LINK REPO GITHUB ANDROID KALKULATOR KAMU
         GITHUB_REPO = 'https://github.com/andrewwanda04/praktikum_cloud_2_calc.git'
-        CREDENTIALS_ID = 'github-token' // ID Credential Github di Jenkins
-        
-        // Output APK yang akan disimpan sebagai Artifact
-        APK_PATH = 'app/build/outputs/apk/debug/app-debug.apk' 
+        CREDENTIALS_ID = 'github-token'
 
-        // VARIABEL KRUSIAL UNTUK WINDOWS: Menggunakan path Jenkins workspace saat ini
-        // (Berada di C:/ProgramData/Jenkins/.jenkins/workspace/praktikum_cloud_2_calc)
+        // Output APK
+        APK_PATH = 'app/build/outputs/apk/debug/app-debug.apk'
+
+        // Lokasi workspace di Windows dan di dalam container
         WINDOWS_WORKSPACE = "C:/ProgramData/Jenkins/.jenkins/workspace/praktikum_cloud_2_calc"
-
-        // Path di dalam container Docker (Linux format)
         DOCKER_MOUNT_PATH = "/home/jenkins/workspace/praktikum_cloud_2_calc"
     }
 
@@ -28,23 +23,21 @@ pipeline {
                     url: env.GITHUB_REPO
             }
         }
-        
-        // MENGGANTI STAGE BUILD DAN TEST MENJADI DOCKER MANUAL EXECUTION
-        stage('2. Build & Test Inside Docker (Manual)') {
+
+        stage('2. Build & Test Inside Docker') {
             steps {
                 echo '============================'
-                echo 'MENJALANKAN DOCKER MANUAL...'
+                echo 'MENJALANKAN BUILD DI DOCKER...'
                 echo '============================'
-                
-                // Gunakan bat (Windows) untuk menjalankan docker run
-                // PERBAIKAN KRUSIAL: MENGGANTI `sed -i` DENGAN `sed` KE FILE SEMENTARA DAN KEMUDIAN `mv`
+
+                // Jalankan Gradle di dalam container Docker
                 bat """
                     docker run --rm ^
                         -u 0 ^
                         -v "${WINDOWS_WORKSPACE}":"${DOCKER_MOUNT_PATH}" ^
                         -w "${DOCKER_MOUNT_PATH}" ^
                         my-android-build-image:latest bash -c ^
-                        "echo 'Running in container at \$(pwd)' && echo 'Fixing Windows line endings safely...' && sed 's/\\r//g' ./gradlew > gradlew.tmp && mv gradlew.tmp ./gradlew && ./gradlew testDebugUnitTest assembleDebug"
+                        "echo 'Running in container at \$(pwd)' && chmod +x ./gradlew && dos2unix ./gradlew && ./gradlew testDebugUnitTest assembleDebug"
                 """
             }
         }
@@ -54,8 +47,6 @@ pipeline {
                 echo '============================'
                 echo 'MENYIMPAN ARTIFACTS (APK)...'
                 echo '============================'
-                
-                // Menyimpan file APK hasil build (Build ada di workspace Jenkins saat ini)
                 archiveArtifacts artifacts: env.APK_PATH, onlyIfSuccessful: true
             }
         }
@@ -66,10 +57,10 @@ pipeline {
             echo 'Pipeline selesai berjalan.'
         }
         success {
-            echo '✅ Build Android sukses! APK dapat didownload dari Artifacts.'
+            echo '✅ Build Android sukses! APK dapat diunduh dari Artifacts Jenkins.'
         }
         failure {
-            echo '❌ Build gagal. Periksa log konsol untuk detail error Gradle.'
+            echo '❌ Build gagal. Cek log untuk detail error Gradle.'
         }
     }
 }
