@@ -37,15 +37,15 @@ pipeline {
                 echo '============================'
                 
                 // Gunakan bat (Windows) untuk menjalankan docker run
-                // SOLUSI TERBAIK UNTUK WINDOWS: Gunakan sed/mv untuk memperbaiki line ending
-                // dan menghindari masalah permission/rename dari chmod dan sed -i
+                // SOLUSI MUTLAK: Gunakan PIPE untuk mengeksekusi gradlew. Script tidak lagi dimodifikasi
+                // di volume mount, 100% menghindari masalah permission Windows.
                 bat """
                     docker run --rm ^
                         -u 0 ^
                         -v "${WINDOWS_WORKSPACE}":"${DOCKER_MOUNT_PATH}" ^
                         -w "${DOCKER_MOUNT_PATH}" ^
                         my-android-build-image:latest bash -c ^
-                        "echo 'Running in container at \$(pwd)' && echo 'Fixing line endings and bypassing permission lock...' && sed 's/\\r//g' ./gradlew > gradlew.tmp && mv gradlew.tmp ./gradlew && ./gradlew testDebugUnitTest assembleDebug"
+                        "echo 'Running in container at \$(pwd)' && echo '*** FINAL SOLUTION: Executing gradlew via Pipe (No file modification) ***' && sed 's/\\r//g' ./gradlew | sh -s -- testDebugUnitTest assembleDebug"
                 """
             }
         }
