@@ -37,19 +37,14 @@ pipeline {
                 echo '============================'
                 
                 // Gunakan bat (Windows) untuk menjalankan docker run
-                // Kita harus mengkonversi path Windows ke format yang dikenali Docker Daemon di Windows
-                // MENGHAPUS PERINTAH CHMOD KARENA SELALU MENDAPATKAN PERMISSION DENIED
-                // MENGGANTI sh -c DENGAN bash -c UNTUK EKSEKUSI YANG LEBIH ANDAL
+                // Perintah di dalam bash -c sekarang dikompres menjadi SATU BARIS LOGIS
                 bat """
                     docker run --rm ^
                         -u 0 ^
                         -v "${WINDOWS_WORKSPACE}":"${DOCKER_MOUNT_PATH}" ^
                         -w "${DOCKER_MOUNT_PATH}" ^
                         my-android-build-image:latest bash -c ^
-                        "echo 'Running in container at \$(pwd)' && 
-                         echo 'Fixing Windows line endings...' && 
-                         sed -i 's/\\r//g' ./gradlew && 
-                         ./gradlew testDebugUnitTest assembleDebug"
+                        "echo 'Running in container at \$(pwd)' && echo 'Fixing Windows line endings...' && sed -i 's/\\r//g' ./gradlew && ./gradlew testDebugUnitTest assembleDebug"
                 """
             }
         }
