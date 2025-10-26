@@ -1,17 +1,7 @@
 // Jenkinsfile: Pipeline CI/CD Komprehensif untuk Aplikasi Android
 pipeline {
-    agent {
-        docker {
-            image 'my-android-build-image:latest' // Image builder Android
-            args '-u root'
-            // Kunci untuk Windows: Gunakan ulang node Jenkins, yang membantu resolusi path.
-            reuseNode true 
-            // PERBAIKAN KRUSIAL UNTUK WINDOWS:
-            // Memaksa Jenkins menggunakan path format Linux di dalam container Docker.
-            // (Asumsi 'praktikum_cloud_2_calc' adalah nama folder workspace di Docker Home)
-            customWorkspace '/home/jenkins/workspace/praktikum_cloud_2_calc'
-        }
-    }
+    // KEMBALIKAN KE agent any KARENA agent docker BERMASALAH DI WINDOWS
+    agent any
 
     environment {
         // GANTI INI DENGAN LINK REPO GITHUB ANDROID KALKULATOR KAMU
@@ -20,6 +10,13 @@ pipeline {
         
         // Output APK yang akan disimpan sebagai Artifact
         APK_PATH = 'app/build/outputs/apk/debug/app-debug.apk' 
+
+        // VARIABEL KRUSIAL UNTUK WINDOWS: Menggunakan path Jenkins workspace saat ini
+        // (Berada di C:/ProgramData/Jenkins/.jenkins/workspace/praktikum_cloud_2_calc)
+        WINDOWS_WORKSPACE = "C:/ProgramData/Jenkins/.jenkins/workspace/praktikum_cloud_2_calc"
+
+        // Path di dalam container Docker (Linux format)
+        DOCKER_MOUNT_PATH = "/home/jenkins/workspace/praktikum_cloud_2_calc"
     }
 
     stages {
@@ -32,36 +29,32 @@ pipeline {
             }
         }
         
-        stage('2. Run Unit Tests') {
+        // MENGGANTI STAGE BUILD DAN TEST MENJADI DOCKER MANUAL EXECUTION
+        stage('2. Build & Test Inside Docker (Manual)') {
             steps {
                 echo '============================'
-                echo 'MENJALANKAN UNIT TESTS...'
-                echo '============================'
-                // Memberi izin eksekusi pada Gradle Wrapper
-                sh 'chmod +x ./gradlew'
-                // Menjalankan unit tests
-                sh './gradlew testDebugUnitTest'
-            }
-        }
-
-        stage('3. Assemble Debug APK') {
-            steps {
-                echo '============================'
-                echo 'MEMBANGUN (BUILD) APK...'
+                echo 'MENJALANKAN DOCKER MANUAL...'
                 echo '============================'
                 
-                // Menjalankan perintah build Android
-                sh './gradlew assembleDebug'
+                // Gunakan bat (Windows) untuk menjalankan docker run
+                // Kita harus mengkonversi path Windows ke format yang dikenali Docker Daemon di Windows
+                bat """
+                    docker run --rm ^
+                        -v "${WINDOWS_WORKSPACE}":"${DOCKER_MOUNT_PATH}" ^
+                        -w "${DOCKER_MOUNT_PATH}" ^
+                        my-android-build-image:latest sh -c ^
+                        "chmod +x ./gradlew && ./gradlew testDebugUnitTest assembleDebug"
+                """
             }
         }
 
-        stage('4. Archive APK') {
+        stage('3. Archive APK') {
             steps {
                 echo '============================'
                 echo 'MENYIMPAN ARTIFACTS (APK)...'
                 echo '============================'
                 
-                // Menyimpan file APK hasil build
+                // Menyimpan file APK hasil build (Build ada di workspace Jenkins saat ini)
                 archiveArtifacts artifacts: env.APK_PATH, onlyIfSuccessful: true
             }
         }
@@ -69,7 +62,6 @@ pipeline {
 
     post {
         always {
-            // Memberikan feedback meskipun build gagal atau sukses
             echo 'Pipeline selesai berjalan.'
         }
         success {
