@@ -6,6 +6,10 @@ pipeline {
             args '-u root'
             // Kunci untuk Windows: Gunakan ulang node Jenkins, yang membantu resolusi path.
             reuseNode true 
+            // PERBAIKAN KRUSIAL UNTUK WINDOWS:
+            // Memaksa Jenkins menggunakan path format Linux di dalam container Docker.
+            // (Asumsi 'praktikum_cloud_2_calc' adalah nama folder workspace di Docker Home)
+            customWorkspace '/home/jenkins/workspace/praktikum_cloud_2_calc'
         }
     }
 
